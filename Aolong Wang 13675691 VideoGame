@@ -1,0 +1,270 @@
+-- 32606 HD Assignment 
+-- 5, Spring Semester, 2020
+-- Name: Aolong Wang
+-- Student ID: 13675691
+-- Email: aolong.wang@student.uts.edu.au
+
+-- The Video Game Database
+
+-- This database describes video game. Video games are electronic games 
+-- played on a video screen (normally a television or a built-in screen when 
+-- played on a handheld machine). Video games usually come on CDs, DVDs or 
+-- digital download. Many games used to come on cartridges. A specialised 
+-- device used to play a video game at home is called a consol.Video game 
+-- consoles are generally marketed and sold on a five-year cycle, with consoles 
+-- of the same technical capabilities grouped into generations.As of 2020, there 
+-- have been eight console generations.
+
+-- Here are some website URL that inspired the project: 
+-- 1. About video game: https://en.wikipedia.org/wiki/Console_game
+-- 2. About the console: https://en.wikipedia.org/wiki/Video_game_console
+-- 3. About the publisher: https://en.wikipedia.org/wiki/Video_game_publisher
+-- 4. Nintendo: https://www.nintendo.com/
+-- 5. Sony Interactive Entertainment: https://www.sie.com/
+-- 6. 2K: https://www.2k.com/en-US/
+-- 6. Sony PS4: https://www.playstation.com/en-au/ps4/
+-- 7. Nintendo Switch: https://www.nintendo.com.au/nintendo-switch/
+-- 8. Microsoft Xbox: https://www.xbox.com/en-AU/
+-- 9. Super Mario: https://mario.nintendo.com/
+-- 10. Video Game Geek: https://videogamegeek.com/
+
+
+
+DROP view NintendoGame CASCADE;
+DROP view NintendoSwitchGame CASCADE;
+
+
+DROP table Game CASCADE;
+DROP table Genre CASCADE;
+DROP table GameGenre CASCADE;
+DROP table Publisher CASCADE;
+DROP table GamePublisher CASCADE;
+DROP table Generation CASCADE;
+DROP table Platform CASCADE;
+DROP table GamePlatform CASCADE;
+
+
+
+Create table Publisher
+(
+    publisherID integer,
+    publisherName TEXT,
+    foundedYear integer,
+    CONSTRAINT PublisherPK PRIMARY KEY (publisherID),
+    CONSTRAINT di_table_publisher_foundedyear CHECK 
+    ((foundedYear >= 1850) AND (foundedYear <= 2020))
+);
+
+Create table Game
+(
+    gameID  integer,
+    gameName TEXT,
+    maxPlayers integer,
+    remakeID integer,
+    CONSTRAINT GamePK PRIMARY KEY (gameID),
+    CONSTRAINT GameFK_Remake FOREIGN KEY (remakeID)
+    REFERENCES Game(gameID) ON DELETE SET NULL,
+    CONSTRAINT di_table_game_maxplayers CHECK
+    ((maxPlayers >= 1) AND (maxPlayers <= 12))
+
+);
+
+Create table GamePublisher
+(
+    gameID integer,
+    publisherID integer,
+    CONSTRAINT GamePublisherPK PRIMARY KEY (gameID, publisherID),
+    CONSTRAINT GamePublisherFK_Game FOREIGN KEY (gameID)
+    REFERENCES Game ON DELETE CASCADE,
+    CONSTRAINT GamePublisherFK_Publisher FOREIGN KEY (publisherID)
+    REFERENCES Publisher ON DELETE RESTRICT
+);
+
+Create table Genre
+(
+    genreID integer,
+    genreName TEXT,
+    alternateName TEXT,
+    CONSTRAINT GenrePK PRIMARY KEY (genreID)
+);
+
+Create table GameGenre
+(
+    gameID integer,
+    genreID integer,
+    CONSTRAINT GameGenrePK PRIMARY KEY (gameID, genreID),
+    CONSTRAINT GameGenreFK_Game FOREIGN KEY (gameID)
+    REFERENCES Game ON DELETE CASCADE,
+    CONSTRAINT GameGenreFK_Genre FOREIGN KEY (genreID)
+    REFERENCES Genre ON DELETE RESTRICT
+);
+
+Create table Generation
+(
+    generationID integer,
+    generatioName TEXT,
+    genBeginYear integer,
+    genEndYear integer,
+    CONSTRAINT GenerationPK PRIMARY KEY (generationID),
+    CONSTRAINT di_table_generation_generationname CHECK
+    (generatioName IN(
+        'First Generation', 
+        'Second Generation',
+        'Third Generation',
+        'Fourth Generation',
+        'Fifth Generation',
+        'Sixth Generation',
+        'Seventh Generation',
+        'Eighth Generation'
+    )),
+    CONSTRAINT di_table_generation_beginyear CHECK
+    ((genBeginYear >= 1972) AND (genBeginYear <= 2020)),
+    CONSTRAINT di_table_generation_endyear CHECK
+    ((genEndYear IS NULL) OR ((genEndYear >= 1984) AND (genEndYear <= 2020)))
+);
+
+Create table Console
+(
+    consoleID integer,
+    consoleName TEXT,
+    nameAbbreviation TEXT,
+    consolePrice money,
+    cReleaseYear integer,
+    generationID integer,
+    CONSTRAINT ConsolePK PRIMARY KEY (consoleID),
+    CONSTRAINT ConsoleFK FOREIGN KEY (generationID)
+    REFERENCES Generation ON DELETE RESTRICT,
+    CONSTRAINT di_table_console_price CHECK
+    (consolePrice > '0'),
+    CONSTRAINT di_table_console_releaseyear CHECK
+    ((cReleaseYear >= 1972) AND (cReleaseYear <= 2020))
+);
+
+Create table GameConsole
+(
+    gameID integer,
+    consoleID integer,
+    gamePrice money,
+    GC_ReleaseYear integer,
+    GC_ReleaseMonth integer,
+    CONSTRAINT GameConsolePK PRIMARY KEY(gameID, consoleID),
+    CONSTRAINT GameConsoleFK_Game FOREIGN KEY (gameID)
+    REFERENCES Game ON DELETE CASCADE,
+    CONSTRAINT GameConsoleFK_Console FOREIGN KEY (consoleID)
+    REFERENCES Console ON DELETE RESTRICT,
+    CONSTRAINT di_table_gameconsole_price CHECK
+    (gamePrice > '0'),
+    CONSTRAINT di_table_gameconsole_releaseyear CHECK
+    ((GC_ReleaseYear >= 1972) AND (GC_ReleaseYear <= 2020)),
+    CONSTRAINT di_table_gameconsole_releasemonth CHECK
+    ((GC_ReleaseMonth >= 1) AND (GC_ReleaseMonth <= 12))
+);
+
+
+CREATE VIEW NintendoGame AS
+SELECT gameID as ID, gameName as Name, maxPlayers FROM
+Game NATURAL JOIN GamePublisher NATURAL JOIN Publisher
+WHERE publisherName = 'Nintendo'
+ORDER BY gameID;
+
+CREATE VIEW NintendoSwitchGame AS
+SELECT gameID as ID, gameName as Name, maxPlayers, 
+gamePrice as Price, GC_ReleaseYear as ReleaseYear, 
+GC_ReleaseMonth As Month FROM 
+Game NATURAL JOIN GameConsole NATURAL JOIN Console
+WHERE consoleName='Nintendo Switch'
+order BY gameID;
+
+
+-- Publisher(publisherID, 'name', foundedYear)
+Insert INTO Publisher VALUES(1, 'Nintendo',            1889);
+Insert INTO Publisher VALUES(2, 'Rockstar Games',      1998);
+Insert INTO Publisher VALUES(3, 'CD Projekt',          1994);
+Insert INTO Publisher VALUES(4, 'Bandai Namco',        2006);
+Insert INTO Publisher VALUES(5, 'The Pokémon Company', 1998);
+Insert INTO Publisher VALUES(6, 'Team17',              1990);
+
+
+
+-- Game(gameID, 'name', maxPlayers, remakeID)
+Insert INTO Game VALUES(1, 'The Witcher 3: Wild Hunt',                  1, NULL);
+Insert INTO Game VALUES(2, 'Pokémon Mystery Dungeon: Rescue Team DX',   1, NULL);
+Insert INTO Game VALUES(3, 'Pokémon Mystery Dungeon: Blue Rescue Team', 1, 2);
+Insert INTO Game VALUES(4, 'Pokémon Mystery Dungeon: Red Rescue Team',  1, 2);
+Insert INTO Game VALUES(5, 'Red Dead Redemption 2',                     1, NULL);
+Insert INTO Game VALUES(6, 'Overcooked 2',                              4, NULL);
+
+
+
+
+-- GamePublsiher(gameID, publisherID)
+Insert INTO GamePublisher VALUES(1, 3);
+Insert INTO GamePublisher VALUES(1, 4);
+Insert INTO GamePublisher VALUES(2, 1);
+Insert INTO GamePublisher VALUES(2, 5);
+Insert INTO GamePublisher VALUES(3, 1);
+Insert INTO GamePublisher VALUES(3, 5);
+Insert INTO GamePublisher VALUES(4, 1);
+Insert INTO GamePublisher VALUES(4, 5);
+Insert INTO GamePublisher VALUES(5, 2);
+Insert INTO GamePublisher VALUES(6, 6);
+
+
+
+-- Genre(genreID, 'name', 'alterName')
+Insert INTO Genre VALUES(1, 'RPG',             'Role Playing Game');
+Insert INTO Genre VALUES(2, 'Sandbox',         'Open World');
+Insert INTO Genre VALUES(3, 'Goguelike',        NULL );
+Insert INTO Genre VALUES(4, 'Shooter',         'Tactical Shooter');
+Insert INTO Genre VALUES(5, 'Action-adventure', NULL);
+Insert INTO Genre VALUES(6, 'Simulation',       NULL);
+
+
+
+-- GameGenre(gameID, genreID)
+Insert INTO GameGenre VALUES(1, 1);
+Insert INTO GameGenre VALUES(1, 2);
+Insert INTO GameGenre VALUES(2, 1);
+Insert INTO GameGenre VALUES(2, 3);
+Insert INTO GameGenre VALUES(3, 1);
+Insert INTO GameGenre VALUES(3, 3);
+Insert INTO GameGenre VALUES(4, 1);
+Insert INTO GameGenre VALUES(4, 3);
+Insert INTO GameGenre VALUES(5, 4);
+Insert INTO GameGenre VALUES(5, 5);
+Insert INTO GameGenre VALUES(6, 6);
+
+
+
+-- Generation(generationID, 'name', beginYear, endYear)
+Insert INTO Generation VALUES(1, 'Eighth Generation',  2012, NULL);
+Insert INTO Generation VALUES(2, 'Seventh Generation', 2005, 2017);
+Insert INTO Generation VALUES(3, 'Sixth Generation',   1998, 2013);
+
+
+
+-- Console(consoleID, 'name', 'abbreviation', consolePrice, releaseyear, generationID)
+Insert INTO Console VALUES(1, 'Nintendo Switch',  'NS',  449.00, 2017, 1);
+Insert INTO Console VALUES(2, 'Xbox One',          NULL, 549.00, 2013, 1);
+Insert INTO Console VALUES(3, 'PlayStation 4',    'PS4', 439.95, 2013, 1);
+Insert INTO Console VALUES(4, 'Nintendo DS',      'NDS', 249.95, 2004, 2);
+Insert INTO Console VALUES(5, 'Game Boy Advance', 'GBA', 109.55, 2001, 3);
+
+
+
+--GameConsole(gameID, consoleID, gamePrice, releaseYear, releaseMonth)
+Insert INTO GameConsole VALUES(1, 1, 77.64, 2019, 10);
+Insert INTO GameConsole VALUES(1, 2, 32.40, 2015, 5); 
+Insert INTO GameConsole VALUES(1, 3, 44.00, 2015, 5);  
+Insert INTO GameConsole VALUES(2, 1, 66.99, 2020, 3);
+Insert INTO GameConsole VALUES(3, 4, 24.99, 2006, 9); 
+Insert INTO GameConsole VALUES(4, 5, 19.99, 2006, 9);
+Insert INTO GameConsole VALUES(5, 2, 43.51, 2018, 10);
+Insert INTO GameConsole VALUES(5, 3, 49.00, 2018, 10);
+Insert INTO GameConsole VALUES(6, 1, 48.49, 2018, 8);
+Insert INTO GameConsole VALUES(6, 3, 23.09, 2018, 8);
+
+
+
+
+
